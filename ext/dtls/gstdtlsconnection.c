@@ -239,7 +239,7 @@ gst_dtls_connection_set_property (GObject * object, guint prop_id,
       priv->bio = BIO_new (BIO_s_gst_dtls_connection ());
       g_return_if_fail (priv->bio);
 
-      priv->bio->ptr = self;
+      BIO_set_data(priv->bio, self);
       SSL_set_bio (priv->ssl, priv->bio, priv->bio);
 
       SSL_set_verify (priv->ssl,
@@ -576,7 +576,6 @@ log_state (GstDtlsConnection * self, const gchar * str)
   GST_LOG_OBJECT (self, "%s: role=%s buf=(%d,%p:%d/%d) %x|%x %s",
       str,
       priv->is_client ? "client" : "server",
-      pqueue_size (priv->ssl->d1->sent_messages),
       priv->bio_buffer,
       priv->bio_buffer_offset,
       priv->bio_buffer_len,
@@ -737,7 +736,7 @@ openssl_verify_callback (int preverify_ok, X509_STORE_CTX * x509_ctx)
   self = SSL_get_ex_data (ssl, connection_ex_index);
   g_return_val_if_fail (GST_IS_DTLS_CONNECTION (self), FALSE);
 
-  pem = _gst_dtls_x509_to_pem (x509_ctx->cert);
+  pem = _gst_dtls_x509_to_pem (X509_STORE_CTX_get0_cert(x509_ctx));
 
   if (!pem) {
     GST_WARNING_OBJECT (self,
@@ -749,7 +748,8 @@ openssl_verify_callback (int preverify_ok, X509_STORE_CTX * x509_ctx)
       gint len;
 
       len =
-          X509_NAME_print_ex (bio, X509_get_subject_name (x509_ctx->cert), 1,
+          X509_NAME_print_ex (bio,
+          X509_get_subject_name (X509_STORE_CTX_get0_cert(x509_ctx)), 1,
           XN_FLAG_MULTILINE);
       BIO_read (bio, buffer, len);
       buffer[len] = '\0';
@@ -777,29 +777,10 @@ openssl_verify_callback (int preverify_ok, X509_STORE_CTX * x509_ctx)
     ########  ####  #######
 */
 
-static BIO_METHOD custom_bio_methods = {
-  BIO_TYPE_BIO,
-  "stream",
-  bio_method_write,
-  bio_method_read,
-  NULL,
-  NULL,
-  bio_method_ctrl,
-  bio_method_new,
-  bio_method_free,
-  NULL,
-};
-
-static BIO_METHOD *
-BIO_s_gst_dtls_connection (void)
-{
-  return &custom_bio_methods;
-}
-
 static int
 bio_method_write (BIO * bio, const char *data, int size)
 {
-  GstDtlsConnection *self = GST_DTLS_CONNECTION (bio->ptr);
+  GstDtlsConnection *self = GST_DTLS_CONNECTION (BIO_get_data(bio));
 
   GST_LOG_OBJECT (self, "BIO: writing %d", size);
 
@@ -824,7 +805,7 @@ bio_method_write (BIO * bio, const char *data, int size)
 static int
 bio_method_read (BIO * bio, char *out_buffer, int size)
 {
-  GstDtlsConnection *self = GST_DTLS_CONNECTION (bio->ptr);
+  GstDtlsConnection *self = GST_DTLS_CONNECTION (BIO_get_data(bio));
   GstDtlsConnectionPrivate *priv = self->priv;
   guint internal_size;
   gint copy_size;
@@ -868,7 +849,7 @@ bio_method_read (BIO * bio, char *out_buffer, int size)
 static long
 bio_method_ctrl (BIO * bio, int cmd, long arg1, void *arg2)
 {
-  GstDtlsConnection *self = GST_DTLS_CONNECTION (bio->ptr);
+  GstDtlsConnection *self = GST_DTLS_CONNECTION (BIO_get_data(bio));
   GstDtlsConnectionPrivate *priv = self->priv;
 
   switch (cmd) {
@@ -916,8 +897,8 @@ bio_method_new (BIO * bio)
 {
   GST_LOG_OBJECT (NULL, "BIO: new");
 
-  bio->shutdown = 0;
-  bio->init = 1;
+  BIO_set_shutdown(bio, 0);
+  BIO_set_init(bio, 1);
 
   return 1;
 }
@@ -930,6 +911,6 @@ bio_method_free (BIO * bio)
     return 0;
   }
 
-  GST_LOG_OBJECT (GST_DTLS_CONNECTION (bio->ptr), "BIO free");
+  GST_LOG_OBJECT (GST_DTLS_CONNECTION (BIO_get_data(bio)), "BIO free");
   return 0;
 }

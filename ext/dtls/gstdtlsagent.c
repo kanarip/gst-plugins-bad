@@ -170,7 +170,7 @@ gst_dtls_agent_init (GstDtlsAgent * self)
 
   ERR_clear_error ();
 
-  priv->ssl_context = SSL_CTX_new (DTLSv1_method ());
+  priv->ssl_context = SSL_CTX_new (DTLS_method ());
   if (ERR_peek_error () || !priv->ssl_context) {
     char buf[512];
 
