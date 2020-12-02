@@ -777,6 +777,28 @@ openssl_verify_callback (int preverify_ok, X509_STORE_CTX * x509_ctx)
     ########  ####  #######
 */
 
+static BIO_METHOD *custom_bio_methods;
+
+static BIO_METHOD *
+BIO_s_gst_dtls_connection (void)
+{
+  if (custom_bio_methods != NULL)
+    return custom_bio_methods;
+
+  custom_bio_methods = BIO_meth_new (BIO_TYPE_BIO, "stream");
+  if (custom_bio_methods == NULL
+      || !BIO_meth_set_write (custom_bio_methods, bio_method_write)
+      || !BIO_meth_set_read (custom_bio_methods, bio_method_read)
+      || !BIO_meth_set_ctrl (custom_bio_methods, bio_method_ctrl)
+      || !BIO_meth_set_create (custom_bio_methods, bio_method_new)
+      || !BIO_meth_set_destroy (custom_bio_methods, bio_method_free)) {
+    BIO_meth_free (custom_bio_methods);
+    return NULL;
+  }
+
+  return custom_bio_methods;
+}
+
 static int
 bio_method_write (BIO * bio, const char *data, int size)
 {
