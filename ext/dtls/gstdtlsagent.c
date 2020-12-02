@@ -116,25 +116,10 @@ _gst_dtls_init_openssl (void)
     GST_DEBUG_CATEGORY_INIT (gst_dtls_agent_debug, "dtlsagent", 0,
         "DTLS Agent");
 
-    if (OPENSSL_VERSION_NUMBER < 0x1000100fL) {
-      GST_WARNING_OBJECT (NULL,
-          "Incorrect OpenSSL version, should be >= 1.0.1, is %s",
-          OPENSSL_VERSION_TEXT);
-      g_assert_not_reached ();
-    }
-
     GST_INFO_OBJECT (NULL, "initializing openssl %lx", OPENSSL_VERSION_NUMBER);
     SSL_library_init ();
     SSL_load_error_strings ();
     ERR_load_BIO_strings ();
-
-    num_locks = CRYPTO_num_locks ();
-    ssl_locks = g_new (GRWLock, num_locks);
-    for (i = 0; i < num_locks; ++i) {
-      g_rw_lock_init (&ssl_locks[i]);
-    }
-    CRYPTO_set_locking_callback (ssl_locking_function);
-    CRYPTO_set_id_callback (ssl_thread_id_function);
 
     g_once_init_leave (&is_init, 1);
   }
