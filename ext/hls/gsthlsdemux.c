@@ -1101,8 +1101,8 @@ gst_hls_demux_decrypt_start (GstHLSDemux * demux, const guint8 * key_data,
     const guint8 * iv_data)
 {
   EVP_CIPHER_CTX *ctx;
-  stream->aes_ctx = EVP_CIPHER_CTX_new ();
-  ctx = stream->aes_ctx;
+  demux->aes_ctx = EVP_CIPHER_CTX_new ();
+  ctx = demux->aes_ctx;
 
   if (!EVP_DecryptInit_ex (ctx, EVP_aes_128_cbc (), NULL, key_data, iv_data))
     return FALSE;
