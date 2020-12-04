@@ -1136,7 +1136,7 @@ decrypt_fragment (GstHLSDemux * demux, gsize length,
 static void
 gst_hls_demux_decrypt_end (GstHLSDemux * demux)
 {
-  EVP_CIPHER_CTX_free (&demux->aes_ctx);
+  EVP_CIPHER_CTX_free (demux->aes_ctx);
   demux->aes_ctx = NULL;
 }
 
