@@ -76,7 +76,7 @@ struct _GstHLSDemux
 
   /* decryption tooling */
 #if defined(HAVE_OPENSSL)
-  EVP_CIPHER_CTX aes_ctx;
+  EVP_CIPHER_CTX *aes_ctx;
 #elif defined(HAVE_NETTLE)
   struct CBC_CTX (struct aes_ctx, AES_BLOCK_SIZE) aes_ctx;
 #else
