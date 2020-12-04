@@ -1117,7 +1117,7 @@ decrypt_fragment (GstHLSDemux * demux, gsize length,
   int len, flen = 0;
   EVP_CIPHER_CTX *ctx;
 
-  ctx = stream->aes_ctx;
+  ctx = demux->aes_ctx;
 
   if (G_UNLIKELY (length > G_MAXINT || length % 16 != 0))
     return FALSE;
